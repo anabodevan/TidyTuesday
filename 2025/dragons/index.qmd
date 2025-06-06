@@ -1,0 +1,105 @@
+---
+title: 'Making a Heatmap of D&D Dragons'
+date: '2025-05-31'
+image: dragon.png
+categories: ['R', 'data visualization', 'tidytuesday', 'ggplot2']
+description: 'a look into stats correlation of D&D dragons'
+execute: 
+  message: false
+  warning: false
+format:
+  html:
+    code-fold: show
+---
+
+> *Every monster is a font of adventure. In this bestiary of Dungeons & Dragons monsters, you’ll discover the weird, the whimsical, the majestic, and the macabre. Choose your favorites, and make them part of your D&D play.*
+
+In my first ever Dungeons & Dragons walkthrough, my party was annihilated by a dragon – granted, it was the final encounter in the campaign so the TPK did not feel *that* bad, but it stung. Nevertheless, today we will go over a visualization using the [Dungeons and Dragons Monsters (2024)](https://github.com/rfordatascience/tidytuesday/blob/main/data/2025/2025-05-27/readme.md) dataset for Tidy Tuesday. We will make a heat map to see what is the correlation between the six ability scores of the forty-five dragons featured in the data set.
+
+### Setup
+
+```{r}
+
+library(pacman)
+pacman::p_load(tidyverse, # Easily Install and Load the Tidyverse 
+               ggplot2, # Grammar of Graphics 
+               stringr, # Simple Wrapper for Common String Operations 
+               ggtext, # Improved Text Rendering for ggplot2 
+               showtext, # Using Fonts More Easily
+               data.table) # Extension of data.frame 
+
+monsters <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-05-27/monsters.csv')
+```
+
+### Data Analysis 
+
+```{r}
+
+dragons <- monsters %>% 
+  filter(type == "Dragon") %>% 
+  select(name, category, str, dex, con, int, wis, cha) # Create a df with dragons 
+
+dragons_stats <- dragons %>% 
+  select(str, dex, con, int, wis, cha) # create a second df only with the stats
+
+dragon_cor <- cor(dragons_stats) %>% 
+  as.data.frame() %>% 
+  rownames_to_column("stat1") %>%
+  pivot_longer(-stat1, names_to = "stat2", values_to = "correlation") %>%
+  mutate(
+    stat1 = factor(stat1, levels = c("str", "dex", "con", "int", "wis", "cha")),
+    stat2 = factor(stat2, levels = c("str", "dex", "con", "int", "wis", "cha"))
+  ) # creates the correlation data frame 
+```
+
+### Aesthetics
+
+```{r}
+font_add_google("MedievalSharp", family = "medieval")
+font_add_google("Josefin Sans", family = "josefin")
+showtext_auto()
+
+theme_set(theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    
+    plot.background = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(family = "medieval", size = 30, face = "bold"),
+    plot.subtitle = element_text(family = "josefin", size = 20), 
+    plot.caption = element_text(family = "josefin", size = 12, color = "grey20"),
+
+    axis.title = element_blank(),
+    axis.text = element_text(family = "josefin", size = 13, hjust = .5, color = "grey20"),
+    axis.ticks = element_blank(),
+    panel.spacing = unit(0, "lines"),
+    
+    legend.title = element_text(family = "medieval", size = 12, color = "grey10"),
+    
+    plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+  ))
+```
+
+### Plot 
+
+```{r}
+ggplot(dragon_cor, aes(stat1, stat2, fill = correlation)) +
+  geom_tile(color = "white", linewidth = 0.5) + 
+  geom_text(aes(label = round(correlation, 2)),
+            color = "black", size = 3.5) +
+  scale_fill_gradient2(
+    low = "#f48c06", 
+    mid = "#e85d04", 
+    high = "#9d0208",
+    midpoint = 0,
+    name = "Correlation"
+  ) +
+  coord_fixed() +
+  labs(
+    title = "The Ability Scores of the D&D Dragons",
+    subtitle = "Correlation between Dungeons & Dragons' dragons ability scores",
+    caption = "Source: D&D SRD • Ana Bodevan @anabodevan"
+  ) +
+  theme()
+```
