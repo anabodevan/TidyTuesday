@@ -68,65 +68,121 @@ order <-
   pull(format) %>% 
   as.character()
 
-label <- c(
-  'aws' = 'AWS    ',
-  'swagger' = 'Swagger    ',
-  'google' = 'Google    ',
-  'openapi' = 'OpenAPI    ',
-  'Other' = 'Other    '
+format_labels <- c(
+  'aws' = 'AWS',
+  'swagger' = 'Swagger',
+  'google' = 'Google',
+  'openapi' = 'OpenAPI',
+  'Other' = 'Other'
 )
 
-data <-
+plot_data <-
   data %>% 
-  group_by(format) %>% 
-  mutate(cumsum = cumsum(n)) %>% 
-  ungroup()
+  mutate(
+    format = factor(format, levels = order),
+    category_clean = str_to_sentence(apisguru_category) |> str_replace_all('_', ' ')
+  )
 
-data %>% 
-  ggplot(aes(x = n, y = factor(format, levels = rev(order)))) +
-  geom_segment(
-    aes(
-      x = cumsum - n,
-      xend = cumsum,
-      color = str_to_sentence(apisguru_category) |> str_replace_all('_', ' ')
-    ),
-    linewidth = 5,
-    lineend = 'round',
-    key_glyph = 'point'
-  ) +
+p <- plot_data %>% 
+  ggplot(aes(x = n, y = fct_rev(format), fill = category_clean)) +
   
+  # Stacked horizontal bars
+  geom_col(width = 0.8, alpha = 0.9) +
+  
+  # Format labels on the left
   geom_text(
-    data = tibble(format = order, n = 0),
-    aes(label = label[format]),
+    data = plot_data %>% 
+      group_by(format) %>% 
+      summarise(total = sum(n), .groups = 'drop'),
+    aes(x = -5, y = fct_rev(format), label = format_labels[format]),
     hjust = 1,
     family = 'source',
-    size = 3,
-    color = "black"
+    size = 4,
+    fontface = 'bold',
+    color = "black",
+    inherit.aes = FALSE
   ) +
   
-  MetBrewer::scale_color_met_d('Hiroshige', direction = -1) +
-  scale_x_continuous(expand = c(0, 0, 0, 0)) +
-  guides(color = guide_legend(override.aes = list(size = 3))) +
-  coord_radial(start = 0, end = 1.7 * pi, theta = 'x', inner.radius = .20) +
+  # Total count labels at the end of bars
+  geom_text(
+    data = plot_data %>% 
+      group_by(format) %>% 
+      summarise(total = sum(n), .groups = 'drop'),
+    aes(x = total + 10, y = fct_rev(format), label = comma(total)),
+    hjust = 0,
+    family = 'source',
+    size = 3.5,
+    color = "black",
+    fontface = 'bold',
+    inherit.aes = FALSE
+  ) +
   
-  theme_minimal() +
+  MetBrewer::scale_fill_met_d('Hiroshige') +
+  
+  # Clean scales
+  scale_x_continuous(
+    expand = expansion(mult = c(0.12, 0.05)),
+    labels = comma_format()
+  ) +
+  
+  # Legend styling
+  guides(
+    fill = guide_legend(
+      override.aes = list(alpha = 1),
+      nrow = 2,
+      byrow = TRUE,
+      title = NULL
+    )
+  ) +
+  
+  # Theme and styling
+  theme_minimal(base_family = "source") +
   theme(
+    # Remove y-axis elements since we have custom labels
     axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    
+    # Style x-axis
+    axis.text.x = element_text(size = 10, face = "plain"),
+    axis.title.x = element_text(size = 12, face = "plain", margin = margin(t = 15)),
+    
+    # Panel styling
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(color = "grey90", linewidth = 0.3),
+    
+    # Legend styling
     legend.position = 'bottom',
-    legend.key.size = unit(0, 'line'),
-    legend.key.spacing.y = unit(-.45, 'line'),
-    legend.text = element_text(margin = margin(l = -0.15, unit = "cm")),
-    plot.title.position = "panel",
-    plot.title = element_text(family = "source", size = 16, face = 'bold'),
+    legend.text = element_text(size = 11),
+    legend.margin = margin(t = 25),
+    legend.box.spacing = unit(0.3, "cm"),
+    
+    # Title styling
+    plot.title = element_text(
+      family = "source", 
+      size = 18, 
+      face = 'bold',
+      margin = margin(b = 20)
+    ),
+    plot.caption = element_text(
+      family = "source", 
+      size = 9, 
+      color = "grey20",
+      margin = margin(t = 20)
+    ),
+    
+    # Plot margins
+    plot.margin = margin(25, 30, 25, 30)
   ) +
   
   labs(
-    x = NULL,
+    x = "Number of APIs",
     y = NULL,
-    color = NULL,
-    title = "Format and Usage of APIs",
-    caption = "TidyTuesday 2025W24 | Ana Bodevan @anabodevan"
-    )
+    title = "API Format Usage by Category",
+    caption = "TidyTuesday 2025W24 | Data: APIs.guru | Visualization: @anabodevan"
+  )
 
-ggsave("apiguru.png", width = 7, height = 5, dpi = 300")
+# Display the plot
+print(p)
 
+ggsave("apiguru.png", plot = p, bg = "white")

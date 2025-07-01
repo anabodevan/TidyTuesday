@@ -47,7 +47,6 @@ appointments_data <- judges_app %>%
       str_detect(president_name, "George H.W. Bush") ~ "G.H.W. Bush",
       str_detect(president_name, "William J. Clinton") ~ "Clinton",
       str_detect(president_name, "Theodore Roosevelt") ~ "T. Roosevelt",
-      str_detect(president_name, "Richard M. Nixon") ~ "Nixon",
       str_detect(president_name, "Dwight D. Eisenhower") ~ "Eisenhower",
       TRUE ~ str_remove(president_name, "\\s[A-Z]\\.$")  # Remove middle initials
     )
@@ -71,3 +70,63 @@ names(era_colors) <- c("Founding Era (1789-1829)",
                        "Interwar & WWII Era (1921-1953)",
                        "Cold War Era (1953-1981)",
                        "Modern Era (1981-2017)")
+
+#### PLOT 
+
+p1 <- appointments_data %>% 
+  slice_head(n=10) %>% 
+  ggplot(aes(x = reorder(short_name, n), y = n, fill = era)) +
+  geom_col(width = 0.8, alpha = 0.9) +
+  geom_text(aes(label = comma(n)), 
+            hjust = -0.1, 
+            size = 3.5, 
+            fontface = "bold",
+            color = "grey20") +
+  scale_fill_manual(values = era_colors) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.15)),
+    labels = comma_format()
+  ) +
+  coord_flip() +
+  labs(
+    title = "U.S Judges Presidential Appointment",
+    subtitle = "Number of Federal Judge Appointments by U.S. President (Top 10)",
+    caption = "Data: TidyTuesday {historydata} | Ana Bodevan @anabodevan",
+    x = NULL,
+    y = "Number of Appointments",
+    fill = "Presidential Era"
+  ) +
+  theme_minimal(base_family = "source", base_size = 12) +
+  theme(
+    plot.title = element_text(
+      family = "playfair", 
+      size = 22, 
+      face = "bold",
+      margin = margin(b = 5),
+      color = "grey10"
+    ),
+    plot.subtitle = element_text(
+      size = 14,
+      margin = margin(b = 20),
+      color = "grey30"
+    ),
+    plot.caption = element_text(
+      size = 10,
+      color = "grey50",
+      margin = margin(t = 15)
+    ),
+    axis.text.y = element_text(size = 11, color = "grey20"),
+    axis.text.x = element_text(size = 10, color = "grey40"),
+    axis.title.x = element_text(size = 12, margin = margin(t = 10)),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, face = "bold"),
+    legend.text = element_text(size = 10),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.background = element_rect("white"),
+    plot.margin = margin(20, 20, 20, 20)
+  )
+
+ggsave("usjudges.png", p1, width = 7, height = 5, dpi = 300)
+
