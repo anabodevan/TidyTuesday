@@ -37,12 +37,12 @@ ggplot(df, aes(x = year, y = avg_price, fill = fuel)) +
   geom_vline(xintercept = 2020, linetype = "dashed", color = "gray40", linewidth = 0.7) +
   geom_hline(yintercept = 0) +
   
-  geom_label(aes(x = 2007.5, y = 8.2, label = "2008 Recession"),
-             hjust = 1, size = 2, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
-  geom_label(aes(x = 2013.5, y = 8.2, label = "Arab Spring"),
-             hjust = 1, size = 2, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
-  geom_label(aes(x = 2019.5, y = 8.2, label = "COVID"),
-             hjust = 1, size = 2, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
+  geom_label(aes(x = 2007.5, y = 8.5, label = "2008 Recession"),
+             hjust = 1, size = 2.5, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
+  geom_label(aes(x = 2013.5, y = 8.5, label = "Arab Spring"),
+             hjust = 1, size = 2.5, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
+  geom_label(aes(x = 2019.5, y = 8.5, label = "COVID"),
+             hjust = 1, size = 2.5, fill = "transparent", label.size = NA, color = "gray30", family = "slab") +
 
   
   scale_fill_manual(values = cores) +
